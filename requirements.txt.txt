@@ -1,0 +1,3 @@
+torch
+psutil==5.8.0
+prettytable==2.2.1
