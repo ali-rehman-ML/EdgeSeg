@@ -4,12 +4,12 @@ A library containing tools and optimized models for running semantic segmentatio
 
 ## Utilities
 
-### Memory Profiler
+### 1-Memory Profiler
 
 **Description:**
 The Memory Profiler tool provides detailed profiling of PyTorch models, focusing on layer-by-layer execution time and CPU memory usage. It incorporates both high-level and low-level profiling information to analyze model performance.
 
-**Table Content Explanation:**
+**Output Table Content Explanation:**
 - **Row ID:** Sequential identifier for each layer.
 - **Layer:** Name of the layer in the PyTorch model.
 - **Type:** Type of layer (e.g., Conv2d, BatchNorm2d).
