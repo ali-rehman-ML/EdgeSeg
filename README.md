@@ -23,11 +23,12 @@ The Memory Profiler tool provides detailed profiling of PyTorch models, focusing
    ```python
    from utils import ModelProfiler
    import torch
-   import torchvision.models.segmentation as models
+   import torchvision.models as models
 
-   # Define your model and input data
-   model = models.deeplabv3_resnet101(pretrained=False)
-   input_data = torch.randn(1, 3, 224, 224)
+   # Define your model and input data (be carefull make sure you use right input size for your model otherwise you may encounter error)
+   model = models.resnet50(pretrained=True)
+   model.cpu().eval()
+   input_data=torch.randn(1, 3, 512, 512).cpu()
 
    # Create a profiler instance
    profiler = ModelProfiler(model)
@@ -39,7 +40,7 @@ The Memory Profiler tool provides detailed profiling of PyTorch models, focusing
    profiler.print_profiling_info()
 
    # Prompt user to input K for top K slowest layers
-   k = int(input("Enter the value of K: "))
+   k = 10
    
    # Print top K layers by execution time
    profiler.print_top_k_layers(k)
