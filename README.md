@@ -14,7 +14,7 @@ The Memory Profiler tool provides detailed profiling of PyTorch models, focusing
 - **Layer:** Name of the layer in the PyTorch model.
 - **Type:** Type of layer (e.g., Conv2d, BatchNorm2d).
 - **Time (s):** Execution time of the layer during inference.
-- **Memory (MB):** CPU memory usage of the layer.
+- **Memory (MB):**Current occupied  CPU memory.
 
 ### Usage
 
