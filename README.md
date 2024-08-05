@@ -6,13 +6,13 @@ A library containing tools and optimized models for running semantic segmentatio
 ### Usage
 
 ```python
-from edgeseg.model_zoo import EfficientVit, Segformer , Deeplabv3
+from edgeseg.model_zoo import EfficientVit, Segformer, Deeplabv3
 
-efficinetvit=EfficientVit(name="b1",weight_url='b1.pt')
+efficinetvit = EfficientVit(name="b1", weight_url="b1.pt")
 
-segformer=Segformer(name="b1")
+segformer = Segformer(name="b1")
 
-deeplabv3_mobv3=Deeplabv3()
+deeplabv3_mobv3 = Deeplabv3()
 
 ```
 
@@ -25,9 +25,8 @@ deeplabv3_mobv3=Deeplabv3()
 ```python
 from edgeseg.inference import ORT
 
-
-model=ORT(model='efficientvit-b1.onnx')
-output=model.invoke(input)
+model = ORT(model="efficientvit-b1.onnx")
+output = model.invoke(input)
 
 ```
 
@@ -68,13 +67,13 @@ The Memory Profiler tool provides detailed profiling of PyTorch models, focusing
    input_data=torch.randn(1, 3, 512, 512).cpu()
 
    # Create a profiler instance
-   profiler = ModelProfiler(model)
+   profiler = ModelProfiler(model,use_cuda=False)
 
    # Profile the model with input data
    profiler.profile(input_data)
 
    # Print detailed profiling information
-   profiler.print_profiling_info()
+   profiler.print_profiling_info(print_io_shape=True)
 
    # Prompt user to input K for top K slowest layers
    k = 10
@@ -97,14 +96,12 @@ The Memory Profiler tool provides detailed profiling of PyTorch models, focusing
 #### Numpy Based Dataset and Dataloader
    The Numpy based Dataset and Dataloader make it easy to load Cityscapes Dataset in numpy having only numpy, PIL and cv2 as    dependendicies. Does not require pytorch and torchvision. It can be used for ONNX runtime and Tflite Runtime and             devices where pytorch is not supported.
    ```python
-   from edgeseg.utils.Datasets import Cityscapes, Numpy_DataLoader
-   
-   dataset = Cityscapes(type='numpy',split='val',dir='/cityscapes',transform=None)
+   dataset = Cityscapes(ntype='numpy',split='val',dir='/cityscapes',transform=None)
    val_loader = Numpy_DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2)
 
    #Usage
 
-   for in in range(len(dataset)):
+   for i in range(len(dataset)):
    image, ground_truth = dataset[i]
 
    #or using dataloader
@@ -112,7 +109,7 @@ The Memory Profiler tool provides detailed profiling of PyTorch models, focusing
       predictions=model(images)
 
    ```
-**Numpy Transform Transforms**
+**Numpy Based Dataset Transforms**
 - **Resize**
 - **Random Crop**
 - **Normalize**
@@ -139,11 +136,11 @@ To do inference we need to pre_process Image
 from edgeseg.utils.processor import EfficientVitImageProcessor, SegformerImageProcessor , out_process
 from PIL import Image
 import matplotlib.pyplt as plt
-img=Image.open('image.png')
-inp=EfficientVitImageProcessor(img,type='torch',crop_size=1024)
-out=model(inp)
+img = Image.open('image.png')
+inp = EfficientVitImageProcessor(img,type='torch',crop_size=1024)
+out = model(inp)
 
-o=out_process.post_process_output(out,size=(1024,2048))
+o = out_process.post_process_output(out,size=(1024,2048))
 plt.imshow(o,cmap='gray')
 plt.show()
 
