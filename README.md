@@ -171,6 +171,13 @@ evaluator.evaluate_dataset(dataset,model,name='efficientvit',type='torch',device
 - **[Segformer](https://arxiv.org/abs/2105.15203)**
 - **[Deeplabv3](https://arxiv.org/abs/1706.05587)**
 
+## To Do
+- **Custom Kernels for optimised vision attension for ONNX Runtime on ARM**
+- **Optimised Runtime for ARM Devices**
+  
+
+
+
 
 
 
