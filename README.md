@@ -174,7 +174,7 @@ evaluator.evaluate_dataset(dataset,model,name='efficientvit',type='torch',device
 ## To Do
 - **Custom Kernels for optimised vision attension for ONNX Runtime on ARM**
 - **Optimised Runtime for ARM Devices**
-- **Profiler for OONX and Tflite  runtimes**
+- **Profiler for ONNX and Tflite  runtimes**
   
 
 
