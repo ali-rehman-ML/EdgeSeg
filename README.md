@@ -21,7 +21,7 @@ The Memory Profiler tool provides detailed profiling of PyTorch models, focusing
 1. **Using Memory Profiler:**
 
    ```python
-   from utils import ModelProfiler
+   from edgeseg.utils import ModelProfiler
    import torch
    import torchvision.models as models
 
@@ -46,5 +46,26 @@ The Memory Profiler tool provides detailed profiling of PyTorch models, focusing
    profiler.print_top_k_layers(k)
 
    ```
-2.Numpy based Dataset and Dataset Loader 
+2. **Dataset and Dataset Loader**
+    **Arguements**
+   - **type:**      str : torchvsion or numpy.
+   - **split:**     str : Dataset Split val or train.
+   - **dir:**       str : Path to dataset directory wjere leftimg8bit and gtfine directories are.
+   - **transform:** str : torchvision.transforms : transform to apply on Datset
+   **Torchvision Dataset and Dataloader for pytorch model**
+   ```python
+   from edgeseg.utils.Datasets import Cityscapes
+   dataset = Cityscapes(type='torchvision',split='val',dir='/cityscapes',transform=transforms)
+   ```
+   **Numpy Based Dataset and Dataloader**
+   The Numpy based Dataset and Dataloader make it easy to load Cityscapes Dataset in numpy having only numpy, PIL and cv2 as dependendicies. Does not require pytorch and        torchvision. It can be used for ONNX runtime and Tflite Runtime and devices where pytorch is not supported.
+   ```python
+   from edgeseg.utils.Datasets import Cityscapes, Numpy_DataLoader
+   
+   dataset = Cityscapes(type='numpy',split='val',dir='/cityscapes',transform=None)
+   val_loader = Numpy_DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2)
+
+   ```
+   
+    
 
