@@ -84,7 +84,7 @@ def torchvision_cityscapes(dir='./',split='val',transforms=None):
 
 def Cityscapes(type='torchvision',split='val',dir='./',transforms=None):
     if type=='torchvision':
-        return torchvision_cityscapes(root=dir,split=split,target_type='semantic')
+        return torchvision_cityscapes(dir=dir,split=split,transforms=transforms)
     if type=='numpy':
         return CityscapesDataset(root_dir=dir, split=split, transform=transforms)
         
