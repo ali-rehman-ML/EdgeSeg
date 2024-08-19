@@ -2,11 +2,61 @@ import torch
 import psutil
 import time
 from prettytable import PrettyTable
+import datetime
+
+
+#helper functions
+def contains_matmul(string):
+    return "MatMul" in string
+
+    
+def generate_table(profile_json):
+
+# Path to your JSON file
+  file_path = profile_json
+  table = PrettyTable()
+  table.field_names = ["Index","Layer Name" ,"Op", "Time (ms)", "Input Shape", "Output Shape","Backend"]
+  # Open and load the JSON file
+  with open(file_path, 'r') as file:
+      data = json.load(file)
+
+  # Iterate through each element/dictionary
+  time=0
+  counter=1
+
+  for element in data:
+
+      if element['cat']=='Node' and element['name'].endswith('time'):
+          # print(element)
+          o_shape=element['args']['output_type_shape'][0]['float']
+          i_shape=element['args']['input_type_shape'][0]['float']
+          duration=element['dur']
+          layer=element['name']
+          provider=element['args']['provider']
+          op=element['args']['op_name']
+
+
+          if contains_matmul(op):
+            i_shape=[element['args']['input_type_shape'][0]['float'],element['args']['input_type_shape'][1]['float']] if len(element['args']['input_type_shape'])>1 else element['args']['input_type_shape'][0]['float']
+
+
+          table.add_row([counter,layer,op,float(duration/1000),i_shape,o_shape,provider])
+          counter+=1
+          time+=duration
+
+  return table  
+
+
+
+
 
 class ModelProfiler:
-    def __init__(self, model, use_cuda=False):
+    def __init__(self, model=None, use_cuda=False,type='torch',providers=None,intra_op_num_threads=None,input_data=None,export_txt=False,Sort_layers=True):
+      self.type=type
+      if type=='torch':
         self.model = model.cpu().eval()
         self.use_cuda = use_cuda
+        self.type=type
 
         if use_cuda:
             self.model = self.model.cuda()
@@ -21,6 +71,24 @@ class ModelProfiler:
         self.total_time = 0
         self.max_memory = 0
         self.start_time = None
+
+      if type=='onnx':
+        if providers is None:
+          self.providers = ['CPUExecutionProvider']
+        if intra_op_num_threads is None:
+          self.intra_op_num_threads=os.cpu_count()
+
+        self.model_path=model
+        self.session_options = ort.SessionOptions()
+        self.session_options.enable_profiling = True
+        self.session_options.intra_op_num_threads = os.cpu_count()
+        self.session = ort.InferenceSession(self.model_path,providers=self.providers,sess_options=self.session_options)
+
+      self.export_txt=export_txt
+      self.Sort_layers=Sort_layers
+
+        
+
 
     def register_hooks(self):
         for name, layer in self.model.named_modules():
@@ -83,7 +151,8 @@ class ModelProfiler:
             self.max_memory = max(self.max_memory, current_cpu_memory)
         return hook
 
-    def profile(self, input_data):
+    def profile(self, input_data=None):
+      if self.type=='torch':
         if self.use_cuda:
             input_data = input_data.cuda()
         self.register_hooks()
@@ -91,8 +160,17 @@ class ModelProfiler:
         self.model(input_data)
         self.total_time = time.time() - start_total_time
         self.remove_hooks()
+      if self.type=='onnx':
+        if input_data is None:
+          input_details = self.session.get_inputs()
+          input_shape = input_details[0].shape
+          input_data=np.random.rand(*input_shape).astype(np.float32)
+        self.session.run(None, {input_details[0].name: input_data})
+        self.profile_file=self.session.end_profiling()
+
 
     def print_profiling_info(self, print_io_shape=True):
+      if self.type=='torch':
         table = PrettyTable()
         field_names = ["Row ID", "Layer", "Type", "Time (s)", "CPU Memory (MB)"]
         if self.use_cuda:
@@ -116,11 +194,43 @@ class ModelProfiler:
             table.add_row(row)
 
         print("Layer Profiling Information:")
-        print(table)
+
+        if self.Sort_layers:
+          table.sortby="Time (s)"
+          table.reversesort=True
+          print(table)
+        if self.export_txt:
+          file_name=f'torch_profile__{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.txt'
+          with open(file_name, 'w') as w:
+            w.write(str(table))
+
         print(f"\nTotal Inference Time: {self.total_time:.6f} seconds")
         print(f"Max Memory Consumption: {self.max_memory:.2f} MB")
+        self.table=table
+
+      if self.type=='onnx':
+        table=generate_table(self.profile_file)
+        if print_io_shape==False:
+          table.del_column('Input Shape')
+          table.del_column('Output Shape')
+        if self.Sort_layers:
+          table.sortby="Time (ms)"
+          table.reversesort=True
+        print(table)
+        self.table=table
+        if self.export_txt:
+          file_name=f'onnxruntime_profile__{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.txt'
+          with open(file_name, 'w') as w:
+            w.write(str(table))
+
+
+
+        
+          
 
     def print_top_k_layers(self, k, print_io_shape=True):
+      if self.type=='torch':
+
         sorted_layers = sorted(self.layer_times.items(), key=lambda x: x[1], reverse=True)
         table = PrettyTable()
         field_names = ["Row ID", "Layer", "Type", "Time (s)"]
@@ -137,3 +247,22 @@ class ModelProfiler:
 
         print(f"Top {k} Layers by Execution Time:")
         print(table)
+      if self.type=='onnx':
+        self.sorted_table=PrettyTable()
+        headers=self.table.field_names
+        self.sorted_table.field_names=headers
+        rows=self.table.rows
+        rows.sort(key=lambda x: x[3], reverse=True)
+        for row in rows[:k]:
+          self.sorted_table.add_row(row)
+
+
+        if print_io_shape==False:
+          self.sorted_table.del_column('Input Shape')
+          self.sorted_table.del_column('Output Shape')
+
+
+        print(f"Top {k} Layers by Execution Time:")
+        print(self.sorted_table)
+
+
