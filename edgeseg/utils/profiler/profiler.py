@@ -3,23 +3,30 @@ import psutil
 import time
 from prettytable import PrettyTable
 import datetime
+import os
+import numpy as np
+import onnxruntime as ort
+import json
 
 
 #helper functions
 def contains_matmul(string):
     return "MatMul" in string
 
-    
+
 def generate_table(profile_json):
+
 
 # Path to your JSON file
   file_path = profile_json
   table = PrettyTable()
   table.field_names = ["Index","Layer Name" ,"Op", "Time (ms)", "Input Shape", "Output Shape","Backend"]
+  session_table=PrettyTable()
+  session_table.field_names = ["Name ", "Time (ms)"]
   # Open and load the JSON file
   with open(file_path, 'r') as file:
       data = json.load(file)
-
+  os.remove(profile_json)
   # Iterate through each element/dictionary
   time=0
   counter=1
@@ -43,8 +50,14 @@ def generate_table(profile_json):
           table.add_row([counter,layer,op,float(duration/1000),i_shape,o_shape,provider])
           counter+=1
           time+=duration
+      if element['cat']=='Session':
+        duration=float(element['dur']/1000)
+        session_table.add_row([element['name'],duration])
 
-  return table  
+
+
+
+  return table,session_table
 
 
 
@@ -60,7 +73,7 @@ class ModelProfiler:
 
         if use_cuda:
             self.model = self.model.cuda()
-        
+
         self.layer_types = {}
         self.layer_times = {}
         self.layer_cpu_memory = {}
@@ -73,6 +86,7 @@ class ModelProfiler:
         self.start_time = None
 
       if type=='onnx':
+        self.providers=providers
         if providers is None:
           self.providers = ['CPUExecutionProvider']
         if intra_op_num_threads is None:
@@ -80,6 +94,8 @@ class ModelProfiler:
 
         self.model_path=model
         self.session_options = ort.SessionOptions()
+        if self.model_path.endswith('.ort'):
+          self.session_options
         self.session_options.enable_profiling = True
         self.session_options.intra_op_num_threads = os.cpu_count()
         self.session = ort.InferenceSession(self.model_path,providers=self.providers,sess_options=self.session_options)
@@ -87,7 +103,7 @@ class ModelProfiler:
       self.export_txt=export_txt
       self.Sort_layers=Sort_layers
 
-        
+
 
 
     def register_hooks(self):
@@ -209,7 +225,7 @@ class ModelProfiler:
         self.table=table
 
       if self.type=='onnx':
-        table=generate_table(self.profile_file)
+        table,session_table=generate_table(self.profile_file)
         if print_io_shape==False:
           table.del_column('Input Shape')
           table.del_column('Output Shape')
@@ -222,11 +238,12 @@ class ModelProfiler:
           file_name=f'onnxruntime_profile__{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.txt'
           with open(file_name, 'w') as w:
             w.write(str(table))
+        print("Session info ")
+        print(session_table)
 
 
 
-        
-          
+
 
     def print_top_k_layers(self, k, print_io_shape=True):
       if self.type=='torch':
@@ -264,5 +281,11 @@ class ModelProfiler:
 
         print(f"Top {k} Layers by Execution Time:")
         print(self.sorted_table)
+
+
+
+
+
+
 
 
